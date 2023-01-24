@@ -23,7 +23,7 @@ python evaluate.py \
   --cfgfile './config/cfg/complex_yolov4.cfg'\
   --batch_size 1 \
   --num_workers 1 \
-  --pretrained_path '../checkpoints/complex_yolov4_astyx_radar_Mag_split_old/Model_complex_yolov4_astyx_radar_Mag_split_old_epoch_280.pth' \
+  --pretrained_path '../checkpoints/low_fusion_mag.pth' \
   --img_size 608 \
   --conf_thresh 0.5 \
   --nms_thresh 0.5 \
@@ -31,3 +31,4 @@ python evaluate.py \
   --low_fusion \
   --mag \
 ```
+Evaluates the network using low fusion data.
