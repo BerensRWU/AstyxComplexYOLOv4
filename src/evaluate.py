@@ -7,19 +7,16 @@ import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
-import matplotlib.pyplot as plt
-
 import torch
 import torch.utils.data.distributed
 from tqdm import tqdm
 from easydict import EasyDict as edict
-import seaborn as sns; sns.set_theme()
 
 sys.path.append('./')
 
 from models.model_utils import create_model
 from utils.misc import AverageMeter, ProgressMeter
-from utils.evaluation_utils import post_processing, get_batch_statistics_rotated_bbox, ap_per_class, load_classes, post_processing_v2
+from utils.evaluation_utils import get_batch_statistics_rotated_bbox, ap_per_class, post_processing_v2
 from data_process_astyx.astyx_dataloader import create_val_dataloader
 
 def evaluate_mAP(val_loader, model, configs):
@@ -101,11 +98,11 @@ def parse_eval_configs():
     parser.add_argument('--batch_size', type=int, default=4,
                         help='mini-batch size (default: 4)')
 
-    parser.add_argument('--conf-thresh', type=float, default=0.5,
+    parser.add_argument('--conf_thresh', type=float, default=0.5,
                         help='for evaluation - the threshold for class conf')
-    parser.add_argument('--nms-thresh', type=float, default=0.5,
+    parser.add_argument('--nms_thresh', type=float, default=0.5,
                         help='for evaluation - the threshold for nms')
-    parser.add_argument('--iou-thresh', type=float, default=0.5,
+    parser.add_argument('--iou_thresh', type=float, default=0.5,
                         help='for evaluation - the threshold for IoU')
 
     parser.add_argument('--plot_AP', action='store_true',
@@ -126,9 +123,11 @@ if __name__ == '__main__':
         
     configs = parse_eval_configs()
     configs.distributed = False  # For evaluation
-    class_names = load_classes(configs.classnames_infor_path)
     
     configs.device = torch.device('cpu' if configs.no_cuda else 'cuda:{}'.format(configs.gpu_idx))
+        
+    assert sum([configs.lidar, configs.radar, configs.low_fusion]) == 1, \
+           "Error: more than one sensor is true. If you want to use low fusion, use the flag low_fusion."
         
     if configs.low_fusion:
         sensor = 'low_fusion'
@@ -153,7 +152,7 @@ if __name__ == '__main__':
     assert os.path.exists(configs.pretrained_path), f'No file at {configs.pretrained_path}'
 
     
-    model.load_state_dict(torch.load(configs.pretrained_path + checkpoint, map_location=torch.device(configs.device)))
+    model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device(configs.device)))
     
     model = model.to(device=configs.device)
 
@@ -162,13 +161,11 @@ if __name__ == '__main__':
     val_dataloader = create_val_dataloader(configs)
 
     print("\nStart computing mAP...\n")
-    precision, recall, AP, f1, ap_class = evaluate_mAP(val_dataloader, model, configs, None)
+    precision, recall, AP, f1, ap_class = evaluate_mAP(val_dataloader, model, configs)
     print("\nDone computing mAP...\n")
     for idx, cls in enumerate(ap_class):
-        print("\t>>>\t Class {} ({}): precision = {:.4f}, recall = {:.4f}, AP = {:.4f}, f1: {:.4f}".format(cls, \
-                class_names[cls][:3], precision[idx], recall[idx], AP[idx], f1[idx]))
+        print("\t>>>\t Class {}: precision = {:.4f}, recall = {:.4f}, AP = {:.4f}, f1: {:.4f}".format(cls, \
+                precision[idx], recall[idx], AP[idx], f1[idx]))
     
-    AP_list += [AP[0]]
-    print(AP_list)
     print("\nmAP: {}\n".format(AP.mean()))
     
