@@ -23,7 +23,7 @@ import cv2
 sys.path.append('../')
 
 from data_process_astyx import transformation, astyx_bev_utils, astyx_data_utils
-import config.kitti_config as cnf
+import config.astyx_config as cnf
 
 
 class astyxDataset(Dataset):
